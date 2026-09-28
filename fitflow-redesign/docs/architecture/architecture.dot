@@ -1,0 +1,58 @@
+digraph FitFlow {
+  graph [rankdir=TB, fontname="DejaVu Sans", fontsize=13, nodesep=0.35, ranksep=0.55, pad=0.3, bgcolor="white", label="FitFlow Redesign - High-Level Architecture (AWS)", labelloc=t, fontsize=18];
+  node  [shape=box, style="rounded,filled", fontname="DejaVu Sans", fontsize=11, color="#33415c", penwidth=1.2];
+  edge  [fontname="DejaVu Sans", fontsize=9, color="#5c677d"];
+
+  subgraph cluster_client {
+    label="Client Layer"; style="rounded,filled"; fillcolor="#e8f1ff"; color="#8fb3e8";
+    ios [label="Flutter App\niOS", fillcolor="#ffffff"];
+    android [label="Flutter App\nAndroid", fillcolor="#ffffff"];
+    web [label="Flutter Web\n(PWA)", fillcolor="#ffffff"];
+    native [label="Native modules\nHealthKit / Health Connect\n(Swift / Kotlin)", fillcolor="#ffffff"];
+  }
+
+  subgraph cluster_edge {
+    label="Edge & Security Layer"; style="rounded,filled"; fillcolor="#fff4e0"; color="#e8b96b";
+    cdn [label="CloudFront CDN\n+ AWS WAF", fillcolor="#ffffff"];
+    cognito [label="Amazon Cognito\n(OAuth2 / OIDC, MFA)", fillcolor="#ffffff"];
+    gw [label="API Gateway / ALB\n(JWT validation, rate limiting)", fillcolor="#ffffff"];
+  }
+
+  subgraph cluster_app {
+    label="Application Layer (ECS Fargate, private subnets)"; style="rounded,filled"; fillcolor="#e9f7ef"; color="#7cc49a";
+    api [label="Core API - NestJS (TypeScript)\nUsers | Workouts | Nutrition | Social | Notifications", fillcolor="#ffffff"];
+    rt [label="Real-time Gateway\nNestJS WebSockets (Socket.IO)", fillcolor="#ffffff"];
+    ai [label="AI Microservice - Python FastAPI\nWorkout plan generation | Food recognition\nRecommendations", fillcolor="#ffffff"];
+    worker [label="Background Workers\n(SQS consumers)", fillcolor="#ffffff"];
+  }
+
+  subgraph cluster_data {
+    label="Data Layer (encrypted with AWS KMS)"; style="rounded,filled"; fillcolor="#f3ecfb"; color="#b39ddb";
+    pg [label="Amazon RDS PostgreSQL\n(Multi-AZ, read replica, pgvector)", shape=cylinder, fillcolor="#ffffff"];
+    redis [label="ElastiCache Redis\nCache | Sessions | Pub/Sub | Leaderboards", shape=cylinder, fillcolor="#ffffff"];
+    s3 [label="Amazon S3\nMedia, meal photos, ML models", shape=cylinder, fillcolor="#ffffff"];
+    sqs [label="Amazon SQS\nEvent queue", fillcolor="#ffffff"];
+  }
+
+  subgraph cluster_ext {
+    label="External & Observability"; style="rounded,filled"; fillcolor="#f2f2f2"; color="#aaaaaa";
+    fcm [label="FCM / APNs\nPush notifications", fillcolor="#ffffff"];
+    food [label="Nutrition database API", fillcolor="#ffffff"];
+    obs [label="CloudWatch + CloudTrail\nLogs, metrics, audit", fillcolor="#ffffff"];
+  }
+
+  native -> ios [style=dashed, arrowhead=none];
+  native -> android [style=dashed, arrowhead=none];
+  {ios android web} -> cognito [label="sign-in", color="#e8a33d"];
+  {ios android web} -> cdn [label="HTTPS / WSS"];
+  cdn -> gw;
+  gw -> api [label="REST"];
+  gw -> rt [label="WebSocket"];
+  api -> ai [label="internal REST/gRPC"];
+  api -> pg; api -> redis; api -> s3 [label="pre-signed URLs"]; api -> sqs [label="events"];
+  rt -> redis [label="pub/sub"];
+  ai -> pg [label="read features"]; ai -> s3 [label="models"];
+  sqs -> worker; worker -> ai; worker -> fcm; worker -> pg;
+  api -> food;
+  api -> obs [style=dotted]; ai -> obs [style=dotted];
+}

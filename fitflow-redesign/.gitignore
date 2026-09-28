@@ -1,0 +1,44 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.iml
+
+# Environment & secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Flutter / Dart (frontend)
+frontend/.dart_tool/
+frontend/.flutter-plugins
+frontend/.flutter-plugins-dependencies
+frontend/build/
+frontend/ios/Pods/
+frontend/android/.gradle/
+frontend/android/local.properties
+*.g.dart
+
+# Node / NestJS (backend)
+node_modules/
+backend/dist/
+coverage/
+npm-debug.log*
+
+# Python (ai-service)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+ai-service/models/*.pt
+ai-service/models/*.onnx
+
+# Infrastructure
+infra/cdk.out/
+.terraform/
+*.tfstate
+*.tfstate.*

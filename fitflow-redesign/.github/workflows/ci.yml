@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  docs-check:
+    name: Required documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify docs exist
+        run: |
+          for f in README.md docs/tech-stack-summary.md docs/comparison-matrix.md \
+                   docs/adr/ADR-001-technology-stack.md docs/architecture/architecture.png; do
+            test -f "$f" || { echo "Missing $f"; exit 1; }
+          done
+
+  frontend:
+    name: Flutter analyze & test
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('frontend/pubspec.yaml') != '' }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  backend:
+    name: NestJS lint & test
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('backend/package.json') != '' }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+
+  ai-service:
+    name: FastAPI tests
+    runs-on: ubuntu-latest
+    if: ${{ hashFiles('ai-service/requirements.txt') != '' }}
+    defaults:
+      run:
+        working-directory: ai-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.txt pytest
+      - run: pytest || [ $? -eq 5 ]   # exit code 5 = no tests collected yet
